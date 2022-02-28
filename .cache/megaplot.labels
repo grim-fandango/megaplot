@@ -1,0 +1,34 @@
+
+al C:0800 .SCRNPTR
+al C:00fb .ROWPTR
+
+al C:7f7e .PlotNew
+al C:7f46 .WhichChar
+al C:7f9c .SetTopRight
+al C:7f69 .CheckChar
+al C:7fa8 .DumpReg
+al C:7f37 .xhalfDone
+al C:7f6b .NextChar
+al C:7fb4 .screeny
+al C:7fb3 .screenx
+al C:7f52 .rowloopy
+al C:7f92 .SetRightBit
+al C:7fb2 .colour
+al C:7f28 .GetCharPosns
+al C:7fb5 .xhalf
+al C:7f66 .LineFound
+al C:7fb6 .yhalf
+al C:7f8d .SetTopLeft
+al C:7f77 .CheckDone
+al C:7f00 .start
+al C:7fba .bitpatterns
+al C:7fb9 .mode4080
+al C:7fca .virtual
+al C:7fa3 .NextCharOut
+al C:7f1e .xok
+al C:7fa6 .Plot
+al C:7fb0 .xpos
+al C:7f61 .nextpagey
+al C:7f9e .Combine
+al C:7fb7 .linestartscrn
+al C:7fb1 .ypos
