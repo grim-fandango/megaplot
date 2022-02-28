@@ -1,7 +1,10 @@
 !to "megaplot.prg", cbm
 
-SCRNPTR = $0800
+SCRNBASE = $0800
+//COLRBASE = $d800
+COLRBASE = $f800 //Bank 1
 ROWPTR = $fb
+COLPTR = $45
 
 * = $7f00
 
@@ -12,14 +15,18 @@ ROWPTR = $fb
 // a = colour, x = x coordinate, y = y coord
 
 start:			// populate properties
-				sta colour
-				stx xpos
-				sty ypos
+
+				sta xpos
+				stx ypos
+				sty colour
 
 				lda #$00
 				sta virtual
 				sta xhalf
 				sta yhalf
+				sta COLPTR + 3
+				lda #$01
+				sta COLPTR + 2
 
 				// validate values
 				txa 
@@ -58,10 +65,15 @@ xhalfDone:		clc
 WhichChar:		// Which character do we need?
 				// Where are we plotting?  Get screen location
 
-				ldx #<SCRNPTR
-				ldy #>SCRNPTR
+				ldx #<SCRNBASE
+				ldy #>SCRNBASE
 				stx ROWPTR
 				sty ROWPTR + 1
+
+				ldx #<COLRBASE
+				ldy #>COLRBASE
+				stx COLPTR
+				sty COLPTR + 1
 			
 				ldy screeny
 				iny
@@ -73,9 +85,14 @@ rowloopy:		// loop through the rows until we get to the start of the screen row
 				lda ROWPTR
 				adc #80
 				sta ROWPTR
+				clc 
+				lda COLPTR
+				adc #80
+				sta COLPTR
 				bcs nextpagey
 				jmp rowloopy
 nextpagey:		inc ROWPTR + 1
+				inc COLPTR + 1
 				jmp rowloopy		
 
 LineFound:		// y is the x coordinate to print to
@@ -128,6 +145,12 @@ Combine:		// combine the new bit with those of any pre-existing bits
 NextCharOut:	lda bitpatterns,x
 				
 Plot:			sta (ROWPTR),y
+				lda colour
+				tax
+				tya
+				taz
+				txa
+				sta [COLPTR],z
 
 DumpReg:		ldx ROWPTR
 				ldy ROWPTR + 1
