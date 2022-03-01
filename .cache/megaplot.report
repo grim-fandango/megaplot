@@ -109,11 +109,11 @@
    107  7f85 d1fb               				cmp (ROWPTR),y
    108  7f87 f005               				beq CheckDone
    109  7f89 e8                 				inx
-   110  7f8a e410               				cpx $10
+   110  7f8a e010               				cpx #$10
    111  7f8c d0f4               				bne NextChar
    112                          
    113                          CheckDone:		// if we reach the end of the list there isn't a battenburg so just go ahead and plot
-   114  7f8e e00a               				cpx #10
+   114  7f8e e010               				cpx #$10
    115  7f90 f003               				beq PlotNew
    116                          
    117                          				// there is already a plot point in the character square, store its nybble representation

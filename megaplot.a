@@ -107,11 +107,11 @@ NextChar:		lda bitpatterns,x
 				cmp (ROWPTR),y
 				beq CheckDone
 				inx
-				cpx $10
+				cpx #$10
 				bne NextChar
 
 CheckDone:		// if we reach the end of the list there isn't a battenburg so just go ahead and plot
-				cpx #10
+				cpx #$10
 				beq PlotNew
 
 				// there is already a plot point in the character square, store its nybble representation
