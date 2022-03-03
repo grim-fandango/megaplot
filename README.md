@@ -1,9 +1,13 @@
 MEGAPLOT
 
 This MEGA65 program runs from BASIC and adds a text mode plot feature, 
-similar to that found on the ZX81.  It uses the PETSCI 'Battenburg' characters to 
-provide each characters space with a 4-pixel plot area, giving a total resolution,
-in 80 character mode, of 160x50 pixels.
+similar to that found on the ZX81, so that users can remain in text mode and draw
+graphics without having to have a raster screen split.  Text and graphics are easily
+mixed - CURSOR, PRINT and other screen text commands can all be used alongside a 
+160x50 resolution plot area.  
+
+MEGAPLOT uses the PETSCI 'Battenburg' characters to provide each characters space 
+with a 4-pixel plot area.
 
 USAGE
 
