@@ -6,7 +6,7 @@ COLRBASE = $f800 //Bank 1
 ROWPTR = $fb
 COLPTR = $45
 
-* = $7f00
+* = $7e00
 
 // basicstub:		!byte $00,$0a,$20,$0a,$00,$fe,$02,$20
 //				!byte $30,$00,$16,$20,$14,$00,$9e,$20
@@ -14,7 +14,7 @@ COLPTR = $45
 
 // a = colour, x = x coordinate, y = y coord
 
-start:			// populate properties
+start:			// populate properties and initialise
 
 				sta xpos
 				stx ypos
@@ -28,8 +28,24 @@ start:			// populate properties
 				lda #$01
 				sta COLPTR + 2
 
+				lda #80
+				sta mode4080
+
+				// 40 or 80 column screen?
+				lda $d031
+				and #$80
+				bne Validate80
+				lda #40
+				sta mode4080
+
+Validate40:		txa 
+				cmp #80
+				bcc xok
+				lda #39
+				sta xpos
+
 				// validate values
-				txa 
+Validate80:		txa 
 				cmp #160
 				bcc xok
 				lda #159
@@ -40,6 +56,7 @@ xok:			tya
 				bcc GetCharPosns
 				lda #47
 				sta ypos
+				
 
 GetCharPosns:	// find character positions
 				//divide x by 2
@@ -75,6 +92,7 @@ WhichChar:		// Which character do we need?
 				stx COLPTR
 				sty COLPTR + 1
 			
+				ldx #$00
 				ldy screeny
 				iny
 
@@ -83,11 +101,11 @@ rowloopy:		// loop through the rows until we get to the start of the screen row
 				beq LineFound			  
 				clc
 				lda ROWPTR
-				adc #80
+				adc mode4080,x
 				sta ROWPTR
 				clc 
 				lda COLPTR
-				adc #80
+				adc mode4080,x
 				sta COLPTR
 				bcs nextpagey
 				jmp rowloopy

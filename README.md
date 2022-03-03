@@ -7,6 +7,17 @@ in 80 character mode, of 160x50 pixels.
 
 USAGE
 
-Load the PRG - it sits at the top of BASIC at $7F00.  Switch to BANK 0 first to 
+Load the PRG - it sits at the top of BASIC at $7E00.  Switch to BANK 0 first to 
 make it visible to BASIC.
 
+The format of the command is:
+
+SYS $FE00,X,Y,C 
+
+..where X and Y are the co-ordinates of the point to plot where X is between 0-159 
+in 80 column mode and 0-79 in 40 column mode.  Y is between 0-49 in both modes.
+
+C is the index of the colour that you want to plot, i.e. 0=black, 1=white, 3=red 
+etc.
+
+Overplotting an existing point will not clear it, i.e. there is no XOR feature.

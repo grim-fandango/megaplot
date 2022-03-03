@@ -8,7 +8,7 @@
      6                          ROWPTR = $fb
      7                          COLPTR = $45
      8                          
-     9                          * = $7f00
+     9                          * = $7e00
     10                          
     11                          // basicstub:		!byte $00,$0a,$20,$0a,$00,$fe,$02,$20
     12                          //				!byte $30,$00,$16,$20,$14,$00,$9e,$20
@@ -16,157 +16,175 @@
     14                          
     15                          // a = colour, x = x coordinate, y = y coord
     16                          
-    17                          start:			// populate properties
+    17                          start:			// populate properties and initialise
     18                          
-    19  7f00 8dd17f             				sta xpos
-    20  7f03 8ed27f             				stx ypos
-    21  7f06 8cd37f             				sty colour
+    19  7e00 8df07e             				sta xpos
+    20  7e03 8ef17e             				stx ypos
+    21  7e06 8cf27e             				sty colour
     22                          
-    23  7f09 a900               				lda #$00
-    24  7f0b 8deb7f             				sta virtual
-    25  7f0e 8dd67f             				sta xhalf
-    26  7f11 8dd77f             				sta yhalf
-    27  7f14 8548               				sta COLPTR + 3
-    28  7f16 a901               				lda #$01
-    29  7f18 8547               				sta COLPTR + 2
+    23  7e09 a900               				lda #$00
+    24  7e0b 8d0a7f             				sta virtual
+    25  7e0e 8df57e             				sta xhalf
+    26  7e11 8df67e             				sta yhalf
+    27  7e14 8548               				sta COLPTR + 3
+    28  7e16 a901               				lda #$01
+    29  7e18 8547               				sta COLPTR + 2
     30                          
-    31                          				// validate values
-    32  7f1a 8a                 				txa 
-    33  7f1b c9a0               				cmp #160
-    34  7f1d 9005               				bcc xok
-    35  7f1f a99f               				lda #159
-    36  7f21 8dd17f             				sta xpos
-    37                          
-    38  7f24 98                 xok:			tya 
-    39  7f25 c930               				cmp #48
-    40  7f27 9005               				bcc GetCharPosns
-    41  7f29 a92f               				lda #47
-    42  7f2b 8dd27f             				sta ypos
-    43                          
-    44                          GetCharPosns:	// find character positions
-    45                          				//divide x by 2
-    46  7f2e 18                 				clc
-    47  7f2f add17f             				lda xpos
-    48  7f32 6a                 				ror
-    49  7f33 8dd47f             				sta screenx
-    50                          				// is it an odd number?  Then we need a right half pixel to be set
-    51  7f36 9005               				bcc xhalfDone
-    52  7f38 a9ff               				lda #$ff
-    53  7f3a 8dd67f             				sta xhalf
-    54                          
-    55                          				//divide y by 2
-    56  7f3d 18                 xhalfDone:		clc
-    57  7f3e add27f             				lda ypos
-    58  7f41 6a                 				ror
-    59  7f42 8dd57f             				sta screeny
-    60                          				// is it an odd number?  Then we need a bottom half pixel to be set
-    61  7f45 9005               				bcc WhichChar
-    62  7f47 a9ff               				lda #$ff
-    63  7f49 8dd77f             				sta yhalf
-    64                          
-    65                          WhichChar:		// Which character do we need?
-    66                          				// Where are we plotting?  Get screen location
-    67                          
-    68  7f4c a200               				ldx #<SCRNBASE
-    69  7f4e a008               				ldy #>SCRNBASE
-    70  7f50 86fb               				stx ROWPTR
-    71  7f52 84fc               				sty ROWPTR + 1
-    72                          
-    73  7f54 a200               				ldx #<COLRBASE
-    74  7f56 a0f8               				ldy #>COLRBASE
-    75  7f58 8645               				stx COLPTR
-    76  7f5a 8446               				sty COLPTR + 1
-    77                          			
-    78  7f5c acd57f             				ldy screeny
-    79  7f5f c8                 				iny
-    80                          
-    81                          rowloopy:		// loop through the rows until we get to the start of the screen row 
-    82  7f60 88                 				dey
-    83  7f61 f01a               				beq LineFound			  
-    84  7f63 18                 				clc
-    85  7f64 a5fb               				lda ROWPTR
-    86  7f66 6950               				adc #80
-    87  7f68 85fb               				sta ROWPTR
-    88  7f6a 18                 				clc 
-    89  7f6b a545               				lda COLPTR
-    90  7f6d 6950               				adc #80
-    91  7f6f 8545               				sta COLPTR
-    92  7f71 b003               				bcs nextpagey
-    93  7f73 4c607f             				jmp rowloopy
-    94  7f76 e6fc               nextpagey:		inc ROWPTR + 1
-    95  7f78 e646               				inc COLPTR + 1
-    96  7f7a 4c607f             				jmp rowloopy		
-    97                          
-    98                          LineFound:		// y is the x coordinate to print to
-    99  7f7d acd47f             				ldy screenx
-   100                          				
-   101                          				// -----------------------------------------------
-   102                          
-   103                          				// Is there already a plot character in the box?
-   104                          CheckChar:		// Is it in the list?  If so, which bit pattern?
-   105  7f80 a200               				ldx #$00
-   106  7f82 bddb7f             NextChar:		lda bitpatterns,x
-   107  7f85 d1fb               				cmp (ROWPTR),y
-   108  7f87 f005               				beq CheckDone
-   109  7f89 e8                 				inx
-   110  7f8a e010               				cpx #$10
-   111  7f8c d0f4               				bne NextChar
-   112                          
-   113                          CheckDone:		// if we reach the end of the list there isn't a battenburg so just go ahead and plot
-   114  7f8e e010               				cpx #$10
-   115  7f90 f003               				beq PlotNew
-   116                          
-   117                          				// there is already a plot point in the character square, store its nybble representation
-   118  7f92 8eeb7f             				stx virtual
-   119                          
-   120                          PlotNew:		// CHECK THE LOGIC HERE AS IT MAY BE 
-   121                          
-   122                          				// if on left, bits 1 or 3
-   123  7f95 add67f             				lda xhalf
-   124  7f98 d00f               				bne SetRightBit  // plot must be on the right of the battenburg
-   125                          				// since bits 1 or 3 is set, we are on the left - top left or bottom left?
-   126  7f9a add77f             				lda yhalf
-   127  7f9d f005               				beq SetTopLeft
-   128  7f9f a204               				ldx #$04 // bottom left
-   129  7fa1 4cb57f             				jmp Combine
-   130  7fa4 a201               SetTopLeft:		ldx #$01 // top left	
-   131  7fa6 4cb57f             				jmp Combine
-   132                          
-   133  7fa9 add77f             SetRightBit:	lda yhalf
-   134  7fac f005               				beq SetTopRight
-   135  7fae a208               				ldx #$08
-   136  7fb0 4cb57f             				jmp Combine
-   137  7fb3 a202               SetTopRight:	ldx #$02
-   138                          
-   139                          Combine:		// combine the new bit with those of any pre-existing bits 
-   140  7fb5 8a                 				txa
-   141  7fb6 0deb7f             				ora virtual
-   142  7fb9 aa                 				tax
-   143                          
-   144                          				// What's the character corresponding to the combined bit pattern?
-   145  7fba bddb7f             NextCharOut:	lda bitpatterns,x
-   146                          				
-   147  7fbd 91fb               Plot:			sta (ROWPTR),y
-   148  7fbf add37f             				lda colour
-   149  7fc2 aa                 				tax
-   150  7fc3 98                 				tya
-   151  7fc4 4b                 				taz
-   152  7fc5 8a                 				txa
-   153  7fc6 ea9245             				sta [COLPTR],z
-   154                          
-   155  7fc9 a6fb               DumpReg:		ldx ROWPTR
-   156  7fcb a4fc               				ldy ROWPTR + 1
-   157  7fcd abd67f             				ldz xhalf
-   158  7fd0 60                 				rts
-   159                          
-   160                          
-   161  7fd1 00                 xpos:			!byte $00
-   162  7fd2 00                 ypos:			!byte $00
-   163  7fd3 00                 colour:			!byte $00
-   164  7fd4 00                 screenx:		!byte $00
-   165  7fd5 00                 screeny:		!byte $00
-   166  7fd6 00                 xhalf:			!byte $00 // ff if the point is on the right of the character square
-   167  7fd7 00                 yhalf:			!byte $00 // ff if the point is on the bottom of the character square
-   168  7fd8 0008               linestartscrn:	!word $0800
-   169  7fda 50                 mode4080:       !byte 80
-   170  7fdb 207e7ce27b61ffec...bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$a0
+    31  7e1a a950               				lda #80
+    32  7e1c 8df97e             				sta mode4080
+    33                          
+    34                          				// 40 or 80 column screen?
+    35  7e1f ad31d0             				lda $d031
+    36  7e22 2980               				and #$80
+    37  7e24 d00f               				bne Validate80
+    38  7e26 a928               				lda #40
+    39  7e28 8df97e             				sta mode4080
+    40                          
+    41  7e2b 8a                 Validate40:		txa 
+    42  7e2c c950               				cmp #80
+    43  7e2e 900f               				bcc xok
+    44  7e30 a927               				lda #39
+    45  7e32 8df07e             				sta xpos
+    46                          
+    47                          				// validate values
+    48  7e35 8a                 Validate80:		txa 
+    49  7e36 c9a0               				cmp #160
+    50  7e38 9005               				bcc xok
+    51  7e3a a99f               				lda #159
+    52  7e3c 8df07e             				sta xpos
+    53                          
+    54  7e3f 98                 xok:			tya 
+    55  7e40 c930               				cmp #48
+    56  7e42 9005               				bcc GetCharPosns
+    57  7e44 a92f               				lda #47
+    58  7e46 8df17e             				sta ypos
+    59                          				
+    60                          
+    61                          GetCharPosns:	// find character positions
+    62                          				//divide x by 2
+    63  7e49 18                 				clc
+    64  7e4a adf07e             				lda xpos
+    65  7e4d 6a                 				ror
+    66  7e4e 8df37e             				sta screenx
+    67                          				// is it an odd number?  Then we need a right half pixel to be set
+    68  7e51 9005               				bcc xhalfDone
+    69  7e53 a9ff               				lda #$ff
+    70  7e55 8df57e             				sta xhalf
+    71                          
+    72                          				//divide y by 2
+    73  7e58 18                 xhalfDone:		clc
+    74  7e59 adf17e             				lda ypos
+    75  7e5c 6a                 				ror
+    76  7e5d 8df47e             				sta screeny
+    77                          				// is it an odd number?  Then we need a bottom half pixel to be set
+    78  7e60 9005               				bcc WhichChar
+    79  7e62 a9ff               				lda #$ff
+    80  7e64 8df67e             				sta yhalf
+    81                          
+    82                          WhichChar:		// Which character do we need?
+    83                          				// Where are we plotting?  Get screen location
+    84                          
+    85  7e67 a200               				ldx #<SCRNBASE
+    86  7e69 a008               				ldy #>SCRNBASE
+    87  7e6b 86fb               				stx ROWPTR
+    88  7e6d 84fc               				sty ROWPTR + 1
+    89                          
+    90  7e6f a200               				ldx #<COLRBASE
+    91  7e71 a0f8               				ldy #>COLRBASE
+    92  7e73 8645               				stx COLPTR
+    93  7e75 8446               				sty COLPTR + 1
+    94                          			
+    95  7e77 a200               				ldx #$00
+    96  7e79 acf47e             				ldy screeny
+    97  7e7c c8                 				iny
+    98                          
+    99                          rowloopy:		// loop through the rows until we get to the start of the screen row 
+   100  7e7d 88                 				dey
+   101  7e7e f01c               				beq LineFound			  
+   102  7e80 18                 				clc
+   103  7e81 a5fb               				lda ROWPTR
+   104  7e83 7df97e             				adc mode4080,x
+   105  7e86 85fb               				sta ROWPTR
+   106  7e88 18                 				clc 
+   107  7e89 a545               				lda COLPTR
+   108  7e8b 7df97e             				adc mode4080,x
+   109  7e8e 8545               				sta COLPTR
+   110  7e90 b003               				bcs nextpagey
+   111  7e92 4c7d7e             				jmp rowloopy
+   112  7e95 e6fc               nextpagey:		inc ROWPTR + 1
+   113  7e97 e646               				inc COLPTR + 1
+   114  7e99 4c7d7e             				jmp rowloopy		
+   115                          
+   116                          LineFound:		// y is the x coordinate to print to
+   117  7e9c acf37e             				ldy screenx
+   118                          				
+   119                          				// -----------------------------------------------
+   120                          
+   121                          				// Is there already a plot character in the box?
+   122                          CheckChar:		// Is it in the list?  If so, which bit pattern?
+   123  7e9f a200               				ldx #$00
+   124  7ea1 bdfa7e             NextChar:		lda bitpatterns,x
+   125  7ea4 d1fb               				cmp (ROWPTR),y
+   126  7ea6 f005               				beq CheckDone
+   127  7ea8 e8                 				inx
+   128  7ea9 e010               				cpx #$10
+   129  7eab d0f4               				bne NextChar
+   130                          
+   131                          CheckDone:		// if we reach the end of the list there isn't a battenburg so just go ahead and plot
+   132  7ead e010               				cpx #$10
+   133  7eaf f003               				beq PlotNew
+   134                          
+   135                          				// there is already a plot point in the character square, store its nybble representation
+   136  7eb1 8e0a7f             				stx virtual
+   137                          
+   138                          PlotNew:		// CHECK THE LOGIC HERE AS IT MAY BE 
+   139                          
+   140                          				// if on left, bits 1 or 3
+   141  7eb4 adf57e             				lda xhalf
+   142  7eb7 d00f               				bne SetRightBit  // plot must be on the right of the battenburg
+   143                          				// since bits 1 or 3 is set, we are on the left - top left or bottom left?
+   144  7eb9 adf67e             				lda yhalf
+   145  7ebc f005               				beq SetTopLeft
+   146  7ebe a204               				ldx #$04 // bottom left
+   147  7ec0 4cd47e             				jmp Combine
+   148  7ec3 a201               SetTopLeft:		ldx #$01 // top left	
+   149  7ec5 4cd47e             				jmp Combine
+   150                          
+   151  7ec8 adf67e             SetRightBit:	lda yhalf
+   152  7ecb f005               				beq SetTopRight
+   153  7ecd a208               				ldx #$08
+   154  7ecf 4cd47e             				jmp Combine
+   155  7ed2 a202               SetTopRight:	ldx #$02
+   156                          
+   157                          Combine:		// combine the new bit with those of any pre-existing bits 
+   158  7ed4 8a                 				txa
+   159  7ed5 0d0a7f             				ora virtual
+   160  7ed8 aa                 				tax
+   161                          
+   162                          				// What's the character corresponding to the combined bit pattern?
+   163  7ed9 bdfa7e             NextCharOut:	lda bitpatterns,x
+   164                          				
+   165  7edc 91fb               Plot:			sta (ROWPTR),y
+   166  7ede adf27e             				lda colour
+   167  7ee1 aa                 				tax
+   168  7ee2 98                 				tya
+   169  7ee3 4b                 				taz
+   170  7ee4 8a                 				txa
+   171  7ee5 ea9245             				sta [COLPTR],z
+   172                          
+   173  7ee8 a6fb               DumpReg:		ldx ROWPTR
+   174  7eea a4fc               				ldy ROWPTR + 1
+   175  7eec abf57e             				ldz xhalf
+   176  7eef 60                 				rts
+   177                          
+   178                          
+   179  7ef0 00                 xpos:			!byte $00
+   180  7ef1 00                 ypos:			!byte $00
+   181  7ef2 00                 colour:			!byte $00
+   182  7ef3 00                 screenx:		!byte $00
+   183  7ef4 00                 screeny:		!byte $00
+   184  7ef5 00                 xhalf:			!byte $00 // ff if the point is on the right of the character square
+   185  7ef6 00                 yhalf:			!byte $00 // ff if the point is on the bottom of the character square
+   186  7ef7 0008               linestartscrn:	!word $0800
+   187  7ef9 50                 mode4080:       !byte 80
+   188  7efa 207e7ce27b61ffec...bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$a0
