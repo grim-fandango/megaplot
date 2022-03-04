@@ -1,4 +1,5 @@
 MEGAPLOT
+========
 
 This MEGA65 program runs from BASIC and adds a text mode plot feature, 
 similar to that found on the ZX81, so that users can remain in text mode and draw
@@ -10,6 +11,7 @@ MEGAPLOT uses the PETSCI 'Battenburg' characters to provide each characters spac
 with a 4-pixel plot area.
 
 USAGE
+-----
 
 Load the PRG - it sits at the top of BASIC at $7E00.  Switch to BANK 0 first to 
 make it visible to BASIC.
