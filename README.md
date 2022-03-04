@@ -24,4 +24,5 @@ in 80 column mode and 0-79 in 40 column mode.  Y is between 0-49 in both modes.
 C is the index of the colour that you want to plot, i.e. 0=black, 1=white, 3=red 
 etc.
 
-Overplotting an existing point will not clear it, i.e. there is no XOR feature.
+Overplotting an existing point will not clear it, i.e. there is no XOR feature.  The 
+point will be plotted again in the new colour specified.

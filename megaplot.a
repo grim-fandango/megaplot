@@ -38,25 +38,26 @@ start:			// populate properties and initialise
 				lda #40
 				sta mode4080
 
-Validate40:		txa 
+Validate40:		lda xpos 
 				cmp #80
 				bcc xok
 				lda #39
 				sta xpos
 
 				// validate values
-Validate80:		txa 
+Validate80:		lda xpos
 				cmp #160
 				bcc xok
 				lda #159
 				sta xpos
 
-xok:			tya 
-				cmp #48
+xok:			lda ypos 
+				cmp #50
 				bcc GetCharPosns
-				lda #47
+				lda #49
 				sta ypos
-				
+				inc $d020
+
 
 GetCharPosns:	// find character positions
 				//divide x by 2
