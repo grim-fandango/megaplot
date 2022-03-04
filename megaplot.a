@@ -56,7 +56,6 @@ xok:			lda ypos
 				bcc GetCharPosns
 				lda #49
 				sta ypos
-				inc $d020
 
 
 GetCharPosns:	// find character positions
