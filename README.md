@@ -26,3 +26,5 @@ etc.
 
 Overplotting an existing point will not clear it, i.e. there is no XOR feature.  The 
 point will be plotted again in the new colour specified.
+
+Negative values and values over 255 with raise an ILLEGAL QUANTITY error.
