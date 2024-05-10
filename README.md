@@ -22,7 +22,7 @@ to make it visible to BASIC.
 
 The format of the command is:
 
-SYS $FE00,X,Y,C 
+SYS $7E00,X,Y,C 
 
 ...where X and Y are the co-ordinates of the point to plot where X is between 0-159 
 in 80 column mode and 0-79 in 40 column mode.  Y is between 0-49 in both modes.
