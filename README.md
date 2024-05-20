@@ -1,7 +1,7 @@
 MEGAPLOT
 ========
 
-This MEGA65 program runs from BASIC and adds a text mode plot feature, 
+This MEGA65 program runs from BASIC and adds text mode plot and line drawing features, 
 similar to that found on the ZX81, so that users can remain in text mode and draw
 graphics without having to have a raster screen split.  Text and graphics are easily
 mixed - PRINT, CURSOR and other screen text commands can all be used alongside a 
@@ -35,6 +35,26 @@ point will be plotted again in the new colour specified.
 
 Negative values and values over 255 will raise an ILLEGAL QUANTITY error.
 
+Available calls are:
+
+- __init_and_plot__:
+  - SYS $7E00,X,Y,C
+  - a = x-coord, x = y-coord, y = colour
+  - (equivalent to original program's behaviour)
+- __init__:
+  - SYS $7E03
+  - a 'one-time' init, so that future draw calls don't need to repeatedly init
+- __plot__:
+  - SYS $7E06,X,Y,C
+  - a = x-coord, x = y-coord, y = colour
+- __line__:
+  - SYS $7E09,X1,Y1,X2,Y2
+  - a = x1, x = y1, y = x2, z = y2
+- __set_colour__:
+  - SYS $7E0C,C
+  - a = colour
+  - (use this call to set the colour of your next line)
+
 PI DEMO
 -------
 
@@ -67,3 +87,8 @@ SINE OF THE TIMES DEMO
 ----------------------
 
 This is something I knocked up in 10 minutes.
+
+PETLINE
+-------
+The 'petline.prg' file features several examples that make use of the line drawing
+capabilities of MEGAPLOT.

@@ -1,0 +1,417 @@
+#output "petline"
+
+' draw lines in 80x50 with petscii block chars
+' giving a full resolution of 160x100
+
+' NOTE: When I later want to move the logic into assembly,
+' consider referencing grim fandango's MEGAPLOT assembly source:
+' - https://github.com/grim-fandango/megaplot/blob/master/megaplot.a
+
+
+'--------
+.declares
+'--------
+#declare PIX_TL = 126
+#declare PIX_TR = 124
+#declare PIX_BL = 123
+#declare PIX_BR = 108
+
+#declare PIX_INV_TL = 254
+#declare PIX_INV_TR = 252
+#declare PIX_INV_BL = 251
+#declare PIX_INV_BR = 236
+
+#declare PIX_DIAG_TL_BR = 127
+#declare PIX_DIAG_BL_TR = 255
+
+#declare PIX_HLINE_BOT = 98
+#declare PIX_HLINE_TOP = 226
+
+#declare PIX_VLINE_LEFT = 97
+#declare PIX_VLINE_RIGHT = 225
+
+#declare PIX_NONE = 32
+#declare PIX_ALL = 160
+
+#declare PI = 3.141592654269
+
+'----
+.vars
+'----
+#declare x1, y1, x2, y2
+#declare dx, dy, mx, my, cx, cy
+#declare cur_char, pix
+#declare diffx, diffy, deltax, deltay, tanval, angle
+#declare a$, ang, line_length, k, debug
+#declare centrex, centrey, centrez
+#declare px(10), py(10), plen, pang, pidx, pdist
+#declare sqang
+#declare cb_anga, cb_angb, cbidx, cbtmp, pz
+#declare cb_inca, cb_incb, ret_ang, z$, zfact
+#declare ddx, ddy, sx, sy, e, e2
+
+#declare qlidx, qlcnt
+#declare qlx1(10), qly1(10), qlx2(10), qly2(10)
+#declare qlvx1, qlvy1, qlvx2, qlvy2
+#declare qlclr
+
+
+gosub init
+
+'----
+.main
+'----
+  print "{x93}";
+  print "petline example menu:"
+  print "--------------------"
+  print "1) lines"
+  print "2) square"
+  print "3) many squares"
+  print "4) draw cube"
+  print "5) draw many cubes"
+  print "6) qix lines"
+
+  get key z$
+  if z$="1" then gosub draw_lines_from_centre_out
+  if z$="2" then gosub draw_square
+  if z$="3" then gosub draw_many_squares
+  if z$="4" then gosub draw_cube
+  if z$="5" then gosub draw_many_cubes
+  if z$="6" then gosub draw_qix_lines
+
+  if z$>="1" and z$<="5" then get key z$
+  goto main
+  end
+
+
+'--------------
+.draw_qix_lines
+'--------------
+
+  ' init
+  qlidx = 0 : qlcnt = 0
+
+.qll_loop
+
+  qlx1(qlidx) = int(rnd(1)*160)
+  qly1(qlidx) = int(rnd(1)*100)
+
+  qlx2(qlidx) = int(rnd(1)*160)
+  qly2(qlidx) = int(rnd(1)*100)
+
+  qlclr = int(rnd(1)*16) + 64
+
+  sys $7e0c, qlclr
+
+  qlcnt = qlcnt + 1
+
+  x1 = qlx1(qlidx)
+  y1 = qly1(qlidx)
+  x2 = qlx2(qlidx)
+  y2 = qly2(qlidx)
+
+  'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",x1,y1,x2,y2
+  gosub draw_line
+  'get key a$
+
+  qlidx = mod(qlidx + 1, 10)
+
+  goto qll_loop
+  
+
+  return
+
+
+'---------------
+.draw_many_cubes
+'---------------
+  cb_incb = 0
+  for cb_inca = 0 to 1.9*PI/4 step PI/16
+    ' print"{x93}"
+    gosub draw_cube
+    ' sleep .02
+  next cb_inca
+
+  cb_inca = 0
+  for cb_incb = 0 to 1.9*PI/2 step PI/16
+    ' print"{x93}"
+    gosub draw_cube
+    ' sleep .02
+  next cb_incb
+
+  return
+  
+
+'---------
+.draw_cube
+'---------
+  pdist = 45
+  cbidx = 0
+
+  cb_angb = atn(1/sqr(2))
+  for cb_anga = PI / 4 to 1.9 * PI step PI/2
+    cbtmp = pdist * cos(cb_angb)
+    pz = cbtmp * sin(cb_anga)
+    py(cbidx) = pdist * sin(cb_angb)
+    px(cbidx) = cbtmp * cos(cb_anga)
+    gosub rotate_inca
+    gosub rotate_incb
+    px(cbidx) = centrex + px(cbidx) - pz * zfact / 4
+    py(cbidx) = centrey + py(cbidx) + pz * zfact
+
+    'print "px(";cbidx;")=";px(cbidx);", py(";cbidx;")=";py(cbidx)
+    cbidx = cbidx + 1
+  next cb_anga 
+
+  plen = 4
+  gosub draw_poly
+
+  ' draw lines from poly
+  cbidx = 0
+  cb_angb = -atn(1/sqr(2))
+  for cb_anga = PI / 4 to 1.9 * PI step PI/2
+    x1 = px(cbidx)
+    y1 = py(cbidx)
+
+    cbtmp = pdist * cos(cb_angb)
+    pz = cbtmp * sin(cb_anga)
+    py(cbidx) = pdist * sin(cb_angb)
+    px(cbidx) = cbtmp * cos(cb_anga)
+    gosub rotate_inca
+    gosub rotate_incb
+    px(cbidx) = centrex + px(cbidx) - pz * zfact / 4
+    py(cbidx) = centrey + py(cbidx) + pz * zfact
+
+    x2 = px(cbidx)
+    y2 = py(cbidx)
+
+    gosub draw_line
+    cbidx = cbidx + 1
+  next cb_anga
+
+  plen = 4
+  gosub draw_poly
+
+  return
+
+
+'-----------
+.rotate_inca
+'-----------
+  ' rotate along y-axis by inca
+  diffx = px(cbidx)
+  diffy = pz
+  cbtmp = sqr(diffx*diffx + diffy*diffy)
+  gosub atan2  ' returns angle
+  angle = angle + cb_inca
+  px(cbidx) = cbtmp * cos(angle)
+  pz = cbtmp * sin(angle) 
+  return
+
+
+'-----------
+.rotate_incb
+'-----------
+  ' rotate along z-axis by incb
+  diffx = px(cbidx)
+  diffy = py(cbidx)
+  cbtmp = sqr(diffx*diffx + diffy*diffy)
+  gosub atan2  ' returns angle
+  angle = angle + cb_incb
+  px(cbidx) = cbtmp * cos(angle)
+  py(cbidx) = cbtmp * sin(angle) 
+  return
+
+
+'-----------------
+.draw_many_squares
+'-----------------
+  for sqang = 0 to PI/2 step PI / 8
+    gosub draw_square
+  next sqang
+  return
+
+
+'-----------
+.draw_square
+'-----------
+  pdist = 45
+
+  pang = sqang - 3 * PI / 4
+  px(0) = centrex + pdist * cos(pang)
+  py(0) = centrey + pdist * sin(pang)
+
+  pang = sqang - PI / 4
+  px(1) = centrex + pdist * cos(pang)
+  py(1) = centrey + pdist * sin(pang)
+
+  pang = sqang + PI / 4
+  px(2) = centrex + pdist * cos(pang)
+  py(2) = centrey + pdist * sin(pang)
+
+  pang = sqang + 3 * PI / 4
+  px(3) = centrex + pdist * cos(pang)
+  py(3) = centrey + pdist * sin(pang)
+
+  plen = 4
+
+  gosub draw_poly
+  return
+
+
+'---------
+.draw_poly
+'---------
+  for pidx = 0 to plen-2
+    x1 = px(pidx) : y1 = py(pidx)
+    x2 = px(pidx+1) : y2 = py(pidx+1)
+    ' print "x1=";x1;", y1=";y1;", x2=";x2;", y2=";y2
+    ' get key a$
+    gosub draw_line
+  next pidx
+
+  x1 = px(plen-1) : y1 = py(plen-1)
+  x2 = px(0) : y2 = py(0)
+  gosub draw_line
+
+  return
+
+'--------------------------
+.draw_lines_from_centre_out
+'--------------------------
+  for ang = 0 to 2*PI step PI / 8
+
+    x1 = 80
+    y1 = 50
+    x2 = int(80 + 30 * cos(ang))
+    y2 = int(50 + 30 * sin(ang))
+
+    ' cursor 0,20:print chr$(27);"qx1 =";x1;", y1 =";y1
+    ' cursor 0,21:print chr$(27);"qx2 =";x2;", y2 =";y2
+    ' get key a$
+    ' if a$="d" then debug = 1: else debug = 0
+
+    gosub draw_line
+  next ang
+
+  return
+
+
+'---------
+.draw_line
+'---------
+  sys $7e03
+  x1 = mod(int(x1)+256,256)
+  y1 = mod(int(y1)+256,256)
+  x2 = mod(int(x2)+256,256)
+  y2 = mod(int(y2)+256,256)
+  sys $7e09, x1, y1, x2, y2
+  return
+  
+
+'-----
+.atan2
+'-----
+  if diffx = 0 then begin
+    if diffy<0 then angle = - PI/2
+    if diffy>0 then angle = PI/2
+  bend:else begin
+    tanval = diffy / diffx
+    angle = atn(tanval)  ' this is range -90deg to 90deg
+    if diffx<0 then begin
+     if diffy<0 then angle = angle - PI:else angle = angle + PI
+    bend
+  bend
+  return
+
+
+'----------
+.draw_pixel
+'----------
+  bank 0:sys $7e06, mod(cx+256, 256), mod(cy+256, 256), 5
+  return
+
+  ' pixel cropped?
+  if cx<0 or cx>159 or cy<0 or cy>99 then return
+
+  dx = int(cx/2) : dy = int(cy/2)
+  mx = mod(int(cx),2) : my = mod(int(cy),2)
+
+    ' cursor 0,16:print chr$(27);"qhx =";hx;", hy =";hy
+    ' cursor 0,17:print chr$(27);"qmx =";mx;", my =";my
+
+  cur_char = peek($40800 + dx + dy * 80)
+  gosub read_on_pixels
+
+  if mx = 0 and my = 0 then pix = pix or 1
+  if mx = 1 and my = 0 then pix = pix or 2
+  if mx = 0 and my = 1 then pix = pix or 4
+  if mx = 1 and my = 1 then pix = pix or 8
+
+  gosub set_on_pixels
+  poke $40800 + dx + dy * 80, cur_char
+
+  return
+
+
+'--------------
+.read_on_pixels
+'--------------
+  pix = 0 ' bitfields: tl = 1, tr = 2, bl = 4, br = 8
+  if cur_char = PIX_TL then pix = 1:return
+  if cur_char = PIX_TR then pix = 2:return
+  if cur_char = PIX_BL then pix = 4:return
+  if cur_char = PIX_BR then pix = 8:return
+
+  if cur_char = PIX_INV_TL then pix=14:return
+  if cur_char = PIX_INV_TR then pix=13:return
+  if cur_char = PIX_INV_BL then pix=11:return
+  if cur_char = PIX_INV_BR then pix=7:return
+
+  if cur_char = PIX_DIAG_TL_BR then pix=9:return
+  if cur_char = PIX_DIAG_BL_TR then pix=6:return
+
+  if cur_char = PIX_HLINE_BOT then pix=12:return
+  if cur_char = PIX_HLINE_TOP then pix=3:return
+
+  if cur_char = PIX_VLINE_LEFT then pix=5:return
+  if cur_char = PIX_VLINE_RIGHT then pix=10:return
+
+  if cur_char = PIX_ALL then pix=15:return
+  return
+
+
+'-------------
+.set_on_pixels
+'-------------
+  if pix = 0 then cur_char = PIX_NONE:return
+  if pix = 1 then cur_char = PIX_TL:return
+  if pix = 2 then cur_char = PIX_TR:return
+  if pix = 3 then cur_char = PIX_HLINE_TOP:return
+  if pix = 4 then cur_char = PIX_BL:return
+  if pix = 5 then cur_char = PIX_VLINE_LEFT:return
+  if pix = 6 then cur_char = PIX_DIAG_BL_TR:return
+  if pix = 7 then cur_char = PIX_INV_BR:return
+  if pix = 8 then cur_char = PIX_BR:return
+  if pix = 9 then cur_char = PIX_DIAG_TL_BR:return
+  if pix = 10 then cur_char = PIX_VLINE_RIGHT:return
+  if pix = 11 then cur_char = PIX_INV_BL:return
+  if pix = 12 then cur_char = PIX_HLINE_BOT:return
+  if pix = 13 then cur_char = PIX_INV_TR:return
+  if pix = 14 then cur_char = PIX_INV_TL:return
+  if pix = 15 then cur_char = PIX_ALL:return
+  return
+
+
+'----
+.init
+'----
+  bank 0:bload "megaplot"
+  sys $7e03 ' init
+  centrex = 80 : centrey = 50
+  print chr$(27);"5";chr$(147);
+
+  zfact = cos(PI/4)
+  return
+  
+ÿ
